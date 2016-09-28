@@ -85,7 +85,6 @@ class BiomajAuthorizer(DummyAuthorizer):
         Expected perm argument is one of the following letters:
         "elradfmwM".
         """
-        logging.error("OSALLOU has_perm "+str(perm)+", "+str(path))
         user_perms = ['e', 'l', 'r']
         if perm in user_perms:
             return True
@@ -93,7 +92,6 @@ class BiomajAuthorizer(DummyAuthorizer):
 
     def get_perms(self, username):
         """Return current user permissions."""
-        logging.error("OSALLOU get_perms")
         return 'elr'
 
     def override_perm(self, username, directory, perm, recursive=False):
