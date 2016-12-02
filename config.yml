@@ -2,11 +2,10 @@ mongo:
     url: 'mongodb://localhost:27017'
     db: 'biomaj_test2'
 
-
 consul:
     host: null
     # Unique agent identifier name among biomaj downloaders
-    id: 'biomaj_user_agent'
+    id: 'biomaj_ftp_agent'
 
 ftp:
     listen: '127.0.0.1'

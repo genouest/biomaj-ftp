@@ -29,10 +29,19 @@ class BiomajAuthorizer(DummyAuthorizer):
         """
         msg = "Authentication failed."
         if apikey == 'anonymous':
+            bank = self.db.banks.find_one({'name': username})
+            if not bank:
+                logging.error('Bank not found: ' + username)
+                raise AuthenticationFailed('Bank does not exists')
+            if bank['properties']['visibility'] != 'public':
+                raise AuthenticationFailed('Not allowed to access to this bank')
+            if len(bank['production']) == 0:
+                raise AuthenticationFailed('No production release available')
+            self.bank = bank
             return
         if apikey != 'anonymous':
             user = None
-            if self.cfg['web']['local_endpoint']:
+            if 'web' in self.cfg and 'local_endpoint' in self.cfg['web'] and self.cfg['web']['local_endpoint']:
                 user_req =  requests.get(self.cfg['web']['local_endpoint'] + '/api/info/apikey/' + apikey)
                 if not user_req.status_code == 200:
                     raise AuthenticationFailed('Wrong or failed authentication')
