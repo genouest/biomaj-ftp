@@ -55,7 +55,7 @@ config = {
     'packages': find_packages(),
     'include_package_data': True,
     'scripts': ['bin/biomaj_ftp_service.py'],
-    'name': 'biomaj_user'
+    'name': 'biomaj_ftp'
 }
 
 setup(**config)
