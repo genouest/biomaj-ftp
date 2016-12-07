@@ -3,8 +3,8 @@ import logging
 import logging.config
 import os
 import yaml
-import socket
 
+import consul
 from pymongo import MongoClient
 import requests
 from pyftpdlib.authorizers import DummyAuthorizer, AuthenticationFailed
@@ -12,6 +12,7 @@ from pyftpdlib.handlers import FTPHandler
 from pyftpdlib.servers import FTPServer
 
 from biomaj_user.user import BmajUser
+from biomaj_core.utils import Utils
 
 
 class BiomajAuthorizer(DummyAuthorizer):
@@ -27,11 +28,11 @@ class BiomajAuthorizer(DummyAuthorizer):
         password don't match the stored credentials, else return
         None.
         """
-        msg = "Authentication failed."
+        # msg = "Authentication failed."
         if apikey == 'anonymous':
             bank = self.db.banks.find_one({'name': username})
             if not bank:
-                logging.error('Bank not found: ' + username)
+                self.logger.error('Bank not found: ' + username)
                 raise AuthenticationFailed('Bank does not exists')
             if bank['properties']['visibility'] != 'public':
                 raise AuthenticationFailed('Not allowed to access to this bank')
@@ -42,7 +43,7 @@ class BiomajAuthorizer(DummyAuthorizer):
         if apikey != 'anonymous':
             user = None
             if 'web' in self.cfg and 'local_endpoint' in self.cfg['web'] and self.cfg['web']['local_endpoint']:
-                user_req =  requests.get(self.cfg['web']['local_endpoint'] + '/api/info/apikey/' + apikey)
+                user_req = requests.get(self.cfg['web']['local_endpoint'] + '/api/info/apikey/' + apikey)
                 if not user_req.status_code == 200:
                     raise AuthenticationFailed('Wrong or failed authentication')
                 user = user_req.json()
@@ -51,7 +52,7 @@ class BiomajAuthorizer(DummyAuthorizer):
 
             bank = self.db.banks.find_one({'name': username})
             if not bank:
-                logging.error('Bank not found: ' + username)
+                self.logger.error('Bank not found: ' + username)
                 raise AuthenticationFailed('Bank does not exists')
             if bank['properties']['visibility'] != 'public':
                 if user['id'] != bank['properties']['owner']:
@@ -116,6 +117,21 @@ class BiomajFTP(object):
         self.cfg = None
         with open(config_file, 'r') as ymlfile:
             self.cfg = yaml.load(ymlfile)
+            Utils.service_config_override(self.cfg)
+
+        if self.cfg['consul']['host']:
+            consul_agent = consul.Consul(host=self.cfg['consul']['host'])
+            consul_agent.agent.service.register('biomaj-ftp',
+                service_id=self.cfg['consul']['id'],
+                address=self.cfg['consul']['id'],
+                port=self.cfg['ftp']['port'],
+                tags=['biomaj'])
+            check = consul.Check.tcp(host= self.cfg['consul']['id'],
+                port=self.cfg['ftp']['port'],
+                interval=20)
+            consul_agent.agent.check.register(self.cfg['consul']['id'] + '_check',
+                check=check,
+                service_id=self.cfg['consul']['id'])
 
         if self.cfg['log_config'] is not None:
             for handler in list(self.cfg['log_config']['handlers'].keys()):
