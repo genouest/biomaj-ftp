@@ -119,6 +119,8 @@ class BiomajFTP(object):
             self.cfg = yaml.load(ymlfile)
             Utils.service_config_override(self.cfg)
 
+        # There is an issue with tcp checks, see https://github.com/cablehead/python-consul/issues/136
+        '''
         if self.cfg['consul']['host']:
             consul_agent = consul.Consul(host=self.cfg['consul']['host'])
             consul_agent.agent.service.register('biomaj-ftp',
@@ -132,6 +134,7 @@ class BiomajFTP(object):
             consul_agent.agent.check.register(self.cfg['consul']['id'] + '_check',
                 check=check,
                 service_id=self.cfg['consul']['id'])
+        '''
 
         if self.cfg['log_config'] is not None:
             for handler in list(self.cfg['log_config']['handlers'].keys()):
