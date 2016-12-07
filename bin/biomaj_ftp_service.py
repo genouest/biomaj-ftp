@@ -21,8 +21,8 @@ class BiomajAuthorizer(DummyAuthorizer):
 
     def set_config(self, cfg):
         self.cfg = cfg
-        self.mongo = None
-        self.db = None
+        self.mongo = MongoClient(BiomajConfig.global_config.get('GENERAL', 'db.url'))
+        self.db = self.mongo[BiomajConfig.global_config.get('GENERAL', 'db.name')]
         self.bank = None
         self.logger = logging
 
@@ -34,10 +34,6 @@ class BiomajAuthorizer(DummyAuthorizer):
         password don't match the stored credentials, else return
         None.
         """
-        if self.db is None:
-            bmaj_config = BiomajConfig(username, options={'no_log': True})
-            self.mongo = MongoClient(bmaj_config.get('db.url'), self.cfg['mongo']['url'])
-            self.db = MongoClient(bmaj_config.get('db.name'), self.cfg['mongo']['db'])
         # msg = "Authentication failed."
         if apikey == 'anonymous':
             bank = self.db.banks.find_one({'name': username})
@@ -53,7 +49,7 @@ class BiomajAuthorizer(DummyAuthorizer):
         if apikey != 'anonymous':
             user = None
             if 'web' in self.cfg and 'local_endpoint' in self.cfg['web'] and self.cfg['web']['local_endpoint']:
-                user_req = requests.get(self.cfg['web']['local_endpoint'] + '/api/info/apikey/' + apikey)
+                user_req = requests.get(self.cfg['web']['local_endpoint'] + '/api/user/info/apikey/' + apikey)
                 if not user_req.status_code == 200:
                     raise AuthenticationFailed('Wrong or failed authentication')
                 user = user_req.json()
