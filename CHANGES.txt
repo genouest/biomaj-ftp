@@ -1,6 +1,5 @@
 3.0.2:
   Allow override of config
-  Add consul checks
   Fix user authentication
   Load database settings from global.properties to match same database than biomaj
 3.0.1:
