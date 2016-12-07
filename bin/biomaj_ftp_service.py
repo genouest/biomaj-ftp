@@ -13,21 +13,31 @@ from pyftpdlib.servers import FTPServer
 
 from biomaj_user.user import BmajUser
 from biomaj_core.utils import Utils
+from biomaj_core.config import BiomajConfig
+
 
 
 class BiomajAuthorizer(DummyAuthorizer):
 
     def set_config(self, cfg):
         self.cfg = cfg
-        self.mongo = MongoClient(self.cfg['mongo']['url'])
-        self.db = self.mongo[self.cfg['mongo']['db']]
+        self.mongo = None
+        self.db = None
         self.bank = None
+        self.logger = logging
+
+    def set_logger(self, logger):
+        self.logger = logger
 
     def validate_authentication(self, username, apikey, handler):
         """Raises AuthenticationFailed if supplied username and
         password don't match the stored credentials, else return
         None.
         """
+        if self.db is None:
+            bmaj_config = BiomajConfig(username, options={'no_log': True})
+            self.mongo = MongoClient(bmaj_config.get('db.url'), self.cfg['mongo']['url'])
+            self.db = MongoClient(bmaj_config.get('db.name'), self.cfg['mongo']['db'])
         # msg = "Authentication failed."
         if apikey == 'anonymous':
             bank = self.db.banks.find_one({'name': username})
@@ -142,10 +152,13 @@ class BiomajFTP(object):
             logging.config.dictConfig(self.cfg['log_config'])
         self.logger = logging.getLogger('biomaj')
 
+        BiomajConfig.load_config(self.cfg['biomaj']['config'])
+
         BmajUser.set_config(self.cfg)
 
         authorizer = BiomajAuthorizer()
         authorizer.set_config(self.cfg)
+        authorizer.set_logger(self.logger)
 
         self.handler = FTPHandler
         self.handler.authorizer = authorizer

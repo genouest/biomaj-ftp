@@ -7,6 +7,9 @@ consul:
     # Unique agent identifier name among biomaj downloaders
     id: 'biomaj_ftp_agent'
 
+biomaj:
+    config: 'path_to_global.properties'
+
 ftp:
     listen: '127.0.0.1'
     port: 2121
