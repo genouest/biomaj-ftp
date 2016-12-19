@@ -1,3 +1,5 @@
+3.0.3:
+  Set consul checks
 3.0.2:
   Allow override of config
   Fix user authentication
