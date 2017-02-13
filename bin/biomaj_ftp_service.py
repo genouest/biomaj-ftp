@@ -3,6 +3,7 @@ import logging
 import logging.config
 import os
 import yaml
+import pprint
 
 import consul
 from pymongo import MongoClient
@@ -14,7 +15,6 @@ from pyftpdlib.servers import FTPServer
 from biomaj_user.user import BmajUser
 from biomaj_core.utils import Utils
 from biomaj_core.config import BiomajConfig
-
 
 
 class BiomajAuthorizer(DummyAuthorizer):
@@ -35,6 +35,8 @@ class BiomajAuthorizer(DummyAuthorizer):
         None.
         """
         # msg = "Authentication failed."
+        for db in self.db.banks.find():
+            pprint.pprint(db)
         if apikey == 'anonymous':
             bank = self.db.banks.find_one({'name': username})
             if not bank:
@@ -55,7 +57,38 @@ class BiomajAuthorizer(DummyAuthorizer):
                 user = user_req.json()
             else:
                 user = BmajUser.get_user_by_apikey(apikey)
-
+            #Add user authentification CR
+            if user==None:
+                user = BmajUser.get_user_by_apikey(apikey)
+            if user['id'] == username :
+                dict_bank = {}
+                for db_entry in self.db.banks.find() :
+                    home_dir = self.get_home_dir(username, db_entry)
+                    dict_bank[home_dir] = [db_entry['properties']['visibility'], db_entry['properties']['owner']]
+                self.bank = dict_bank
+                #Create a new user for biomaj server with specific permission
+                if not self.has_user(username):
+                    print("plop")
+                    self.add_user(username,apikey,self.get_home_dir(username))
+                for directory in dict_bank :
+                     print("###DEBUG authentification directory :" +str(directory))
+                     #If the user is the bank's owner
+                     print("###DEBUG dict_bank[directory]:"+ str(dict_bank[directory]))
+                     if dict_bank[directory][1] == username :#and dict_bank[directory][0] == "private" :
+                         print("##DEBUG authentification directory :if dict_bank[directory] == username")
+                         perm = "elr"
+                         self.override_perm(username, directory, perm, recursive=True)
+                     #elif dict_bank[directory][0] == "public":
+                     #    print("##DEBUG authentification directory :if dict_bank[directory] == username")
+                     #    perm = "elr"
+                     #    self.override_perm(username, directory, perm, recursive=False)
+                     else :
+                         print("##DEBUG authentification directory :else")
+                         perm = "el"
+                         self.override_perm(username, directory, perm, recursive=True)
+                print("###DEBUG self.user_table[username] :"+str( self.user_table[username]))
+                print("###DEBUG self.user_table[username] :"+str(self.user_table[username]['operms']))
+                return
             bank = self.db.banks.find_one({'name': username})
             if not bank:
                 self.logger.error('Bank not found: ' + username)
@@ -64,18 +97,24 @@ class BiomajAuthorizer(DummyAuthorizer):
                 if user['id'] != bank['properties']['owner']:
                     if 'members' not in bank['properties'] or user['id'] not in bank['properties']['members']:
                         raise AuthenticationFailed('Not allowed to access to this bank')
-
             if len(bank['production']) == 0:
                 raise AuthenticationFailed('No production release available')
             self.bank = bank
 
-    def get_home_dir(self, username):
+    def get_home_dir(self, username, bank = None):
         """Return the user's home directory.
         Since this is called during authentication (PASS),
         AuthenticationFailed can be freely raised by subclasses in case
         the provided username no longer exists.
         """
-        bank = self.bank
+        if not bank :
+            bank = self.bank
+        if 'production' not in bank :
+            list_home_dir = []           
+            for key in bank :
+                list_home_dir.append(key)
+            home_dir = os.path.commonprefix(list_home_dir)
+            return home_dir
         last = bank['production'][0]
         if bank['current']:
             for prod in bank['production']:
@@ -101,6 +140,7 @@ class BiomajAuthorizer(DummyAuthorizer):
         Expected perm argument is one of the following letters:
         "elradfmwM".
         """
+        print("###DEBUG perms :" +str(perm))
         user_perms = ['e', 'l', 'r']
         if perm in user_perms:
             return True
@@ -108,10 +148,11 @@ class BiomajAuthorizer(DummyAuthorizer):
 
     def get_perms(self, username):
         """Return current user permissions."""
+        if self.user_table[username]['operms'] :
         return 'elr'
 
-    def override_perm(self, username, directory, perm, recursive=False):
-        return
+    #def override_perm(self, username, directory, perm, recursive=False):
+    #    return
 
 
 class BiomajFTP(object):
