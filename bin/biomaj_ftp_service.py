@@ -35,8 +35,6 @@ class BiomajAuthorizer(DummyAuthorizer):
         None.
         """
         # msg = "Authentication failed."
-        for db in self.db.banks.find():
-            pprint.pprint(db)
         if apikey == 'anonymous':
             bank = self.db.banks.find_one({'name': username})
             if not bank:
@@ -47,6 +45,8 @@ class BiomajAuthorizer(DummyAuthorizer):
             if len(bank['production']) == 0:
                 raise AuthenticationFailed('No production release available')
             self.bank = bank
+            if not self.has_user(username):
+                self.add_user(username,apikey,self.get_home_dir(username))
             return
         if apikey != 'anonymous':
             user = None
@@ -58,8 +58,6 @@ class BiomajAuthorizer(DummyAuthorizer):
             else:
                 user = BmajUser.get_user_by_apikey(apikey)
             #Add user authentification CR
-            if user==None:
-                user = BmajUser.get_user_by_apikey(apikey)
             if user['id'] == username :
                 dict_bank = {}
                 for db_entry in self.db.banks.find() :
@@ -68,26 +66,18 @@ class BiomajAuthorizer(DummyAuthorizer):
                 self.bank = dict_bank
                 #Create a new user for biomaj server with specific permission
                 if not self.has_user(username):
-                    print("plop")
                     self.add_user(username,apikey,self.get_home_dir(username))
                 for directory in dict_bank :
-                     print("###DEBUG authentification directory :" +str(directory))
                      #If the user is the bank's owner
-                     print("###DEBUG dict_bank[directory]:"+ str(dict_bank[directory]))
-                     if dict_bank[directory][1] == username :#and dict_bank[directory][0] == "private" :
-                         print("##DEBUG authentification directory :if dict_bank[directory] == username")
+                     if dict_bank[directory][0] == "public" :
                          perm = "elr"
                          self.override_perm(username, directory, perm, recursive=True)
-                     #elif dict_bank[directory][0] == "public":
-                     #    print("##DEBUG authentification directory :if dict_bank[directory] == username")
-                     #    perm = "elr"
-                     #    self.override_perm(username, directory, perm, recursive=False)
+                     if dict_bank[directory][1] == username :#and dict_bank[directory][0] != "public" :
+                         perm = "elr"
+                         self.override_perm(username, directory, perm, recursive=True)
                      else :
-                         print("##DEBUG authentification directory :else")
                          perm = "el"
                          self.override_perm(username, directory, perm, recursive=True)
-                print("###DEBUG self.user_table[username] :"+str( self.user_table[username]))
-                print("###DEBUG self.user_table[username] :"+str(self.user_table[username]['operms']))
                 return
             bank = self.db.banks.find_one({'name': username})
             if not bank:
@@ -100,7 +90,9 @@ class BiomajAuthorizer(DummyAuthorizer):
             if len(bank['production']) == 0:
                 raise AuthenticationFailed('No production release available')
             self.bank = bank
-
+            if not self.has_user(username):
+                self.add_user(username,apikey,self.get_home_dir(bank))
+           
     def get_home_dir(self, username, bank = None):
         """Return the user's home directory.
         Since this is called during authentication (PASS),
@@ -133,26 +125,6 @@ class BiomajAuthorizer(DummyAuthorizer):
     def get_msg_quit(self, username):
         """Return the user's quitting message."""
         return 'Bye'
-
-    def has_perm(self, username, perm, path=None):
-        """Whether the user has permission over path (an absolute
-        pathname of a file or a directory).
-        Expected perm argument is one of the following letters:
-        "elradfmwM".
-        """
-        print("###DEBUG perms :" +str(perm))
-        user_perms = ['e', 'l', 'r']
-        if perm in user_perms:
-            return True
-        return False
-
-    def get_perms(self, username):
-        """Return current user permissions."""
-        if self.user_table[username]['operms'] :
-        return 'elr'
-
-    #def override_perm(self, username, directory, perm, recursive=False):
-    #    return
 
 
 class BiomajFTP(object):
