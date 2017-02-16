@@ -58,7 +58,7 @@ class BiomajAuthorizer(DummyAuthorizer):
             else:
                 user = BmajUser.get_user_by_apikey(apikey)
             #Add user authentification CR
-            if user['id'] == username :
+            if user['id'] == username or username == "anonymous" :
                 dict_bank = {}
                 for db_entry in self.db.banks.find() :
                     home_dir = self.get_home_dir(username, db_entry)
@@ -72,7 +72,7 @@ class BiomajAuthorizer(DummyAuthorizer):
                      if dict_bank[directory][0] == "public" :
                          perm = "elr"
                          self.override_perm(username, directory, perm, recursive=True)
-                     if dict_bank[directory][1] == username :#and dict_bank[directory][0] != "public" :
+                     if dict_bank[directory][1] == username and dict_bank[directory][0] != "public" :
                          perm = "elr"
                          self.override_perm(username, directory, perm, recursive=True)
                      else :
