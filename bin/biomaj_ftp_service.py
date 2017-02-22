@@ -55,10 +55,15 @@ class BiomajAuthorizer(DummyAuthorizer):
                 if not user_req.status_code == 200:
                     raise AuthenticationFailed('Wrong or failed authentication')
                 user = user_req.json()
+            #anonymous user : we defined the user as anonymous
+            elif username == "anonymous":
+                user = {}
+                user['id'] = "anonymous"
             else:
                 user = BmajUser.get_user_by_apikey(apikey)
+            
             #Add user authentification CR
-            if user['id'] == username or username == "anonymous" :
+            if user['id'] == username :
                 dict_bank = {}
                 for db_entry in self.db.banks.find() :
                     home_dir = self.get_home_dir(username, db_entry)
@@ -72,7 +77,7 @@ class BiomajAuthorizer(DummyAuthorizer):
                      if dict_bank[directory][0] == "public" :
                          perm = "elr"
                          self.override_perm(username, directory, perm, recursive=True)
-                     if dict_bank[directory][1] == username and dict_bank[directory][0] != "public" :
+                     elif dict_bank[directory][1] == username and dict_bank[directory][0] != "public" :
                          perm = "elr"
                          self.override_perm(username, directory, perm, recursive=True)
                      else :
