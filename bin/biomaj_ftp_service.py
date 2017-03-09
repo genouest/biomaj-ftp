@@ -35,69 +35,43 @@ class BiomajAuthorizer(DummyAuthorizer):
         None.
         """
         # msg = "Authentication failed."
-        if apikey == 'anonymous':
-            bank = self.db.banks.find_one({'name': username})
-            if not bank:
-                self.logger.error('Bank not found: ' + username)
-                raise AuthenticationFailed('Bank does not exists')
-            if bank['properties']['visibility'] != 'public':
-                raise AuthenticationFailed('Not allowed to access to this bank')
-            if len(bank['production']) == 0:
-                raise AuthenticationFailed('No production release available')
-            self.bank = bank
-            if not self.has_user(username):
-                self.add_user(username,apikey,self.get_home_dir(username))
-            return
-        if apikey != 'anonymous':
-            user = None
-            if 'web' in self.cfg and 'local_endpoint' in self.cfg['web'] and self.cfg['web']['local_endpoint']:
-                user_req = requests.get(self.cfg['web']['local_endpoint'] + '/api/user/info/apikey/' + apikey)
-                if not user_req.status_code == 200:
-                    raise AuthenticationFailed('Wrong or failed authentication')
-                user = user_req.json()
-            #anonymous user : we defined the user as anonymous
-            elif username == "anonymous":
-                user = {}
-                user['id'] = "anonymous"
-            else:
-                user = BmajUser.get_user_by_apikey(apikey)
-            
-            #Add user authentification CR
-            if user['id'] == username :
-                dict_bank = {}
-                for db_entry in self.db.banks.find() :
-                    home_dir = self.get_home_dir(username, db_entry)
-                    dict_bank[home_dir] = [db_entry['properties']['visibility'], db_entry['properties']['owner']]
-                self.bank = dict_bank
-                #Create a new user for biomaj server with specific permission
-                if not self.has_user(username):
-                    self.add_user(username,apikey,self.get_home_dir(username))
-                for directory in dict_bank :
-                     #If the user is the bank's owner
-                     if dict_bank[directory][0] == "public" :
-                         perm = "elr"
-                         self.override_perm(username, directory, perm, recursive=True)
-                     elif dict_bank[directory][1] == username and dict_bank[directory][0] != "public" :
-                         perm = "elr"
-                         self.override_perm(username, directory, perm, recursive=True)
-                     else :
-                         perm = "el"
-                         self.override_perm(username, directory, perm, recursive=True)
-                return
-            bank = self.db.banks.find_one({'name': username})
-            if not bank:
-                self.logger.error('Bank not found: ' + username)
-                raise AuthenticationFailed('Bank does not exists')
-            if bank['properties']['visibility'] != 'public':
-                if user['id'] != bank['properties']['owner']:
-                    if 'members' not in bank['properties'] or user['id'] not in bank['properties']['members']:
-                        raise AuthenticationFailed('Not allowed to access to this bank')
-            if len(bank['production']) == 0:
-                raise AuthenticationFailed('No production release available')
-            self.bank = bank
-            if not self.has_user(username):
-                self.add_user(username,apikey,self.get_home_dir(bank))
-           
+        # login:apikey , anonymous:mail, bank:apikey, bank:anonymous
+        #anonymous user : we defined the user as anonymous
+        if username == "anonymous":
+            user = {}
+            user['id'] = "anonymous"
+        elif 'web' in self.cfg and 'local_endpoint' in self.cfg['web'] and self.cfg['web']['local_endpoint']:
+            user_req = requests.get(self.cfg['web']['local_endpoint'] + '/api/user/info/apikey/' + apikey)
+            if not user_req.status_code == 200:
+                raise AuthenticationFailed('Wrong or failed authentication')
+            user = user_req.json()
+        else:
+            user = BmajUser.get_user_by_apikey(apikey)
+        if not user:
+            self.logger.error('User not found: ' + username)
+            raise AuthenticationFailed('User does not exists')
+        
+        #Determining the authorized path   
+        dict_bank = {}
+        for db_entry in self.db.banks.find() :
+            home_dir = self.get_home_dir(username, db_entry)
+            dict_bank[home_dir] = [db_entry['properties']['visibility'], db_entry['properties']['owner']]
+        self.bank = dict_bank
+        #Create a new user for biomaj server with specific permission
+        if not self.has_user(username):
+            self.add_user(username,apikey,self.get_home_dir(username))    
+        for directory in dict_bank :
+             #If the user is the bank's owner
+             if dict_bank[directory][0] == "public" :
+                 perm = "elr"
+                 self.override_perm(username, directory, perm, recursive=True)
+             elif dict_bank[directory][1] == username and dict_bank[directory][0] != "public" :
+                 perm = "elr"
+                 self.override_perm(username, directory, perm, recursive=True)
+             else :
+                 perm = "el"
+                 self.override_perm(username, directory, perm, recursive=True)
+        return 
     def get_home_dir(self, username, bank = None):
         """Return the user's home directory.
         Since this is called during authentication (PASS),
