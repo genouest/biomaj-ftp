@@ -1,0 +1,41 @@
+mongo:
+    url: 'mongodb://localhost:27017'
+    db: 'biomaj'
+
+consul:
+    host: null
+    # Unique agent identifier name among biomaj downloaders
+    id: 'biomaj_ftp_agent'
+
+biomaj:
+    config: 'global.properties'
+
+ftp:
+    listen: '127.0.0.1'
+    port: 2121
+    passive_ports_start: 60000
+    passive_ports_end: 65535
+
+web:
+    local_endpoint: 'http://127.0.0.1:5070'
+
+log_config:
+    'version': 1
+    'formatters':
+        'generic':
+            'format': '%(asctime)s %(levelname)-5.5s [%(name)s][%(threadName)s] %(message)s'
+    'handlers':
+        'console':
+            'class': 'logging.StreamHandler'
+            'formatter': 'generic'
+            'level': 'DEBUG'
+    'loggers':
+        'root':
+            'level': 'INFO'
+            'handlers':
+                - 'console'
+        'biomaj':
+            'level': 'DEBUG'
+            'handlers':
+                - 'console'
+    'disable_existing_loggers': False

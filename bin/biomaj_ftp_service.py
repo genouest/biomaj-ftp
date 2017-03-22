@@ -156,6 +156,12 @@ class BiomajFTP(object):
 
         self.handler = FTPHandler
         self.handler.authorizer = authorizer
+        if 'passive_ports_start' in self.cfg['ftp'] and 'passive_ports_end' in self.cfg['ftp'] and self.cfg['ftp']['passive_ports_start'] and self.cfg['ftp']['passive_ports_end']:
+            self.handler.passive_ports = range(self.cfg['ftp']['passive_ports_start'], self.cfg['ftp']['passive_ports_end'])
+            self.logger.info('Use passive ports range %d:%d' % (self.cfg['ftp']['passive_ports_start'], self.cfg['ftp']['passive_ports_end']))
+        else:
+            self.handler.passive_ports = range(60000, 65535)
+            self.logger.info('Use passive ports range %d:%d' % (60000, 65535))
 
     def start(self):
         server = FTPServer((self.cfg['ftp']['listen'], self.cfg['ftp']['port']), self.handler)

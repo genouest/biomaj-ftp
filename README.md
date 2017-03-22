@@ -23,3 +23,7 @@ Web endpoint refers to the biomaj API endpoint
 export BIOMAJ_CONFIG=path_to_config.yml
 
 python bin/biomaj_ftp_service.py
+
+# Docker
+
+To run in a Docker container, do not forget to open passive ports range (60000, 65535)
