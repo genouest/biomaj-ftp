@@ -69,7 +69,7 @@ class BiomajAuthorizer(DummyAuthorizer):
                  perm = "elr"
                  self.override_perm(username, directory, perm, recursive=True)
              else :
-                 perm = "el"
+                 perm = ""
                  self.override_perm(username, directory, perm, recursive=True)
         return 
     def get_home_dir(self, username, bank = None):
