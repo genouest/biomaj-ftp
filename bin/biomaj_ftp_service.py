@@ -35,7 +35,6 @@ class BiomajAuthorizer(DummyAuthorizer):
         None.
         """
         # msg = "Authentication failed."
-        # login:apikey , anonymous:mail, bank:apikey, bank:anonymous
         #anonymous user : we defined the user as anonymous
         if username == "anonymous":
             user = {}
@@ -68,7 +67,7 @@ class BiomajAuthorizer(DummyAuthorizer):
              elif dict_bank[directory][1] == username and dict_bank[directory][0] != "public" :
                  perm = "elr"
                  self.override_perm(username, directory, perm, recursive=True)
-             else :
+             else :#anonymous user and private bank
                  perm = ""
                  self.override_perm(username, directory, perm, recursive=True)
         return 
