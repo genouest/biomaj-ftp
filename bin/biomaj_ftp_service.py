@@ -3,6 +3,7 @@ import logging
 import logging.config
 import os
 import yaml
+import pprint
 
 import consul
 from pymongo import MongoClient
@@ -14,7 +15,6 @@ from pyftpdlib.servers import FTPServer
 from biomaj_user.user import BmajUser
 from biomaj_core.utils import Utils
 from biomaj_core.config import BiomajConfig
-
 
 
 class BiomajAuthorizer(DummyAuthorizer):
@@ -35,47 +35,56 @@ class BiomajAuthorizer(DummyAuthorizer):
         None.
         """
         # msg = "Authentication failed."
-        if apikey == 'anonymous':
-            bank = self.db.banks.find_one({'name': username})
-            if not bank:
-                self.logger.error('Bank not found: ' + username)
-                raise AuthenticationFailed('Bank does not exists')
-            if bank['properties']['visibility'] != 'public':
-                raise AuthenticationFailed('Not allowed to access to this bank')
-            if len(bank['production']) == 0:
-                raise AuthenticationFailed('No production release available')
-            self.bank = bank
-            return
-        if apikey != 'anonymous':
-            user = None
-            if 'web' in self.cfg and 'local_endpoint' in self.cfg['web'] and self.cfg['web']['local_endpoint']:
-                user_req = requests.get(self.cfg['web']['local_endpoint'] + '/api/user/info/apikey/' + apikey)
-                if not user_req.status_code == 200:
-                    raise AuthenticationFailed('Wrong or failed authentication')
-                user = user_req.json()
-            else:
-                user = BmajUser.get_user_by_apikey(apikey)
-
-            bank = self.db.banks.find_one({'name': username})
-            if not bank:
-                self.logger.error('Bank not found: ' + username)
-                raise AuthenticationFailed('Bank does not exists')
-            if bank['properties']['visibility'] != 'public':
-                if user['id'] != bank['properties']['owner']:
-                    if 'members' not in bank['properties'] or user['id'] not in bank['properties']['members']:
-                        raise AuthenticationFailed('Not allowed to access to this bank')
-
-            if len(bank['production']) == 0:
-                raise AuthenticationFailed('No production release available')
-            self.bank = bank
-
-    def get_home_dir(self, username):
+        #anonymous user : we defined the user as anonymous
+        if username == "anonymous":
+            user = {}
+            user['id'] = "anonymous"
+        elif 'web' in self.cfg and 'local_endpoint' in self.cfg['web'] and self.cfg['web']['local_endpoint']:
+            user_req = requests.get(self.cfg['web']['local_endpoint'] + '/api/user/info/apikey/' + apikey)
+            if not user_req.status_code == 200:
+                raise AuthenticationFailed('Wrong or failed authentication')
+            user = user_req.json()
+        else:
+            user = BmajUser.get_user_by_apikey(apikey)
+        if not user:
+            self.logger.error('User not found: ' + username)
+            raise AuthenticationFailed('User does not exists')
+        
+        #Determining the authorized path   
+        dict_bank = {}
+        for db_entry in self.db.banks.find() :
+            home_dir = self.get_home_dir(username, db_entry)
+            dict_bank[home_dir] = [db_entry['properties']['visibility'], db_entry['properties']['owner']]
+        self.bank = dict_bank
+        #Create a new user for biomaj server with specific permission
+        if not self.has_user(username):
+            self.add_user(username,apikey,self.get_home_dir(username))    
+        for directory in dict_bank :
+             #If the user is the bank's owner
+             if dict_bank[directory][0] == "public" :
+                 perm = "elr"
+                 self.override_perm(username, directory, perm, recursive=True)
+             elif dict_bank[directory][1] == username and dict_bank[directory][0] != "public" :
+                 perm = "elr"
+                 self.override_perm(username, directory, perm, recursive=True)
+             else :#anonymous user and private bank
+                 perm = ""
+                 self.override_perm(username, directory, perm, recursive=True)
+        return 
+    def get_home_dir(self, username, bank = None):
         """Return the user's home directory.
         Since this is called during authentication (PASS),
         AuthenticationFailed can be freely raised by subclasses in case
         the provided username no longer exists.
         """
-        bank = self.bank
+        if not bank :
+            bank = self.bank
+        if 'production' not in bank :
+            list_home_dir = []           
+            for key in bank :
+                list_home_dir.append(key)
+            home_dir = os.path.commonprefix(list_home_dir)
+            return home_dir
         last = bank['production'][0]
         if bank['current']:
             for prod in bank['production']:
@@ -94,24 +103,6 @@ class BiomajAuthorizer(DummyAuthorizer):
     def get_msg_quit(self, username):
         """Return the user's quitting message."""
         return 'Bye'
-
-    def has_perm(self, username, perm, path=None):
-        """Whether the user has permission over path (an absolute
-        pathname of a file or a directory).
-        Expected perm argument is one of the following letters:
-        "elradfmwM".
-        """
-        user_perms = ['e', 'l', 'r']
-        if perm in user_perms:
-            return True
-        return False
-
-    def get_perms(self, username):
-        """Return current user permissions."""
-        return 'elr'
-
-    def override_perm(self, username, directory, perm, recursive=False):
-        return
 
 
 class BiomajFTP(object):
