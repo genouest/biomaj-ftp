@@ -1,15 +1,11 @@
-# Status
-
-In development
-
 # Biomaj ftp
 
 Biomaj FTP server to access production banks
 
-anonymous access is allow with login bank_name and password anonymous.
-Existing users can access server with the bank name and their login and API key as password
+anonymous access is allow with login *anonymous* and any fake password.
+Existing users can access server with the login and API key as password.
 
-Only public or allowed banks are accessible
+Only public or owned banks are accessible
 
 # Config
 
