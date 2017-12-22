@@ -1,3 +1,5 @@
+3.0.5:
+  Allow proxy endpoint definition for daemon, else use default web.local_endpoint
 3.0.4:
   Add passive ports setup, range(60000, 65535)
   Modify login: use login and api key to access to all available banks instead of connecting to one bank

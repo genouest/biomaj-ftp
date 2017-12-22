@@ -36,11 +36,12 @@ class BiomajAuthorizer(DummyAuthorizer):
         """
         # msg = "Authentication failed."
         #anonymous user : we defined the user as anonymous
+        proxy = Utils.get_service_endpoint(config, 'user')
         if username == "anonymous":
             user = {}
             user['id'] = "anonymous"
-        elif 'web' in self.cfg and 'local_endpoint' in self.cfg['web'] and self.cfg['web']['local_endpoint']:
-            user_req = requests.get(self.cfg['web']['local_endpoint'] + '/api/user/info/apikey/' + apikey)
+        elif proxy:
+            user_req = requests.get(proxy + '/api/user/info/apikey/' + apikey)
             if not user_req.status_code == 200:
                 raise AuthenticationFailed('Wrong or failed authentication')
             user = user_req.json()
