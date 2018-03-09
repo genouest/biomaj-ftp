@@ -36,7 +36,7 @@ class BiomajAuthorizer(DummyAuthorizer):
         """
         # msg = "Authentication failed."
         #anonymous user : we defined the user as anonymous
-        proxy = Utils.get_service_endpoint(config, 'user')
+        proxy = Utils.get_service_endpoint(self.cfg, 'user')
         if username == "anonymous":
             user = {}
             user['id'] = "anonymous"
