@@ -62,7 +62,9 @@ class BiomajAuthorizer(DummyAuthorizer):
             self.add_user(username,apikey,self.get_home_dir(username))    
         for directory in dict_bank :
              #If the user is the bank's owner
-             if dict_bank[directory][0] == "public" :
+             if directory == home_dir : # we can not override the home_dir permission
+                 continue
+             elif dict_bank[directory][0] == "public" :
                  perm = "elr"
                  self.override_perm(username, directory, perm, recursive=True)
              elif dict_bank[directory][1] == username and dict_bank[directory][0] != "public" :
