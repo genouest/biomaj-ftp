@@ -61,16 +61,16 @@ class BiomajAuthorizer(DummyAuthorizer):
         if not self.has_user(username):
             self.add_user(username,apikey,self.get_home_dir(username))    
         for directory in dict_bank :
-             #If the user is the bank's owner
-             if directory == home_dir : # we can not override the home_dir permission
-                 continue
-             elif dict_bank[directory][0] == "public" :
+             if dict_bank[directory][0] == "public" :
+                 logging.error("#DEBUG elif dict_bank[directory][0] == public : "+ str(directory))
                  perm = "elr"
                  self.override_perm(username, directory, perm, recursive=True)
              elif dict_bank[directory][1] == username and dict_bank[directory][0] != "public" :
+                 logging.error("#DEBUG elif dict_bank[directory][0] == public : "+ str(directory))
                  perm = "elr"
                  self.override_perm(username, directory, perm, recursive=True)
              else :#anonymous user and private bank
+                 logging.error("#DEBUG else :#anonymous user and private bank"+ str(directory))
                  perm = ""
                  self.override_perm(username, directory, perm, recursive=True)
         return 
@@ -156,7 +156,8 @@ class BiomajFTP(object):
         else:
             self.handler.passive_ports = range(60000, 65535)
             self.logger.info('Use passive ports range %d:%d' % (60000, 65535))
-
+        if 'masquerade_address' in self.cfg['ftp']:
+            self.handler.masquerade_address= self.cfg['ftp']['masquerade_address']
     def start(self):
         server = FTPServer((self.cfg['ftp']['listen'], self.cfg['ftp']['port']), self.handler)
         server.serve_forever()
