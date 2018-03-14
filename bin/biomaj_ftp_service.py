@@ -37,9 +37,9 @@ class BiomajAuthorizer(DummyAuthorizer):
         # msg = "Authentication failed."
         #anonymous user : we defined the user as anonymous
         proxy = Utils.get_service_endpoint(self.cfg, 'user')
-        if username == "anonymous":
+        if username == "biomaj_default":
             user = {}
-            user['id'] = "anonymous"
+            user['id'] = "BMJ_default"
         elif proxy:
             user_req = requests.get(proxy + '/api/user/info/apikey/' + apikey)
             if not user_req.status_code == 200:
@@ -62,15 +62,12 @@ class BiomajAuthorizer(DummyAuthorizer):
             self.add_user(username,apikey,self.get_home_dir(username))    
         for directory in dict_bank :
              if dict_bank[directory][0] == "public" :
-                 logging.error("#DEBUG elif dict_bank[directory][0] == public : "+ str(directory))
                  perm = "elr"
                  self.override_perm(username, directory, perm, recursive=True)
              elif dict_bank[directory][1] == username and dict_bank[directory][0] != "public" :
-                 logging.error("#DEBUG elif dict_bank[directory][0] == public : "+ str(directory))
                  perm = "elr"
                  self.override_perm(username, directory, perm, recursive=True)
-             else :#anonymous user and private bank
-                 logging.error("#DEBUG else :#anonymous user and private bank"+ str(directory))
+             elif username == "biomaj_default" or dict_bank[directory][0] != "public" :#biomaj_default user and private bank
                  perm = ""
                  self.override_perm(username, directory, perm, recursive=True)
         return 
@@ -156,8 +153,12 @@ class BiomajFTP(object):
         else:
             self.handler.passive_ports = range(60000, 65535)
             self.logger.info('Use passive ports range %d:%d' % (60000, 65535))
-        if 'masquerade_address' in self.cfg['ftp'] and self.cfg['ftp']['masquerade_address'] != None:
-            self.handler.masquerade_address= self.cfg['ftp']['masquerade_address']
+        
+        masquerade_address = os.environ.get('MASQUERADE_ADDRESS')
+        if masquerade_address:
+            self.handler.masquerade_address = os.environ['MASQUERADE_ADDRESS']
+        elif 'masquerade_address' in self.cfg['ftp'] and self.cfg['ftp']['masquerade_address'] != None:
+            self.handler.masquerade_address = self.cfg['ftp']['masquerade_address']
     def start(self):
         server = FTPServer((self.cfg['ftp']['listen'], self.cfg['ftp']['port']), self.handler)
         server.serve_forever()
