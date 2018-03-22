@@ -154,11 +154,12 @@ class BiomajFTP(object):
             self.handler.passive_ports = range(60000, 65535)
             self.logger.info('Use passive ports range %d:%d' % (60000, 65535))
         
-        masquerade_address = os.environ.get('MASQUERADE_ADDRESS')
+        masquerade_address = os.environ.get('MASQUERADE_ADDRESS', None)
         if masquerade_address:
             self.handler.masquerade_address = os.environ['MASQUERADE_ADDRESS']
-        elif 'masquerade_address' in self.cfg['ftp'] and self.cfg['ftp']['masquerade_address'] != None:
+        elif 'masquerade_address' in self.cfg['ftp'] and self.cfg['ftp']['masquerade_address'] is not None:
             self.handler.masquerade_address = self.cfg['ftp']['masquerade_address']
+
     def start(self):
         server = FTPServer((self.cfg['ftp']['listen'], self.cfg['ftp']['port']), self.handler)
         server.serve_forever()
