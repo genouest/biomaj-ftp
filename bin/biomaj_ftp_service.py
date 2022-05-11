@@ -3,6 +3,10 @@ import logging
 import logging.config
 import os
 import yaml
+try:
+    from yaml import CLoader as Loader
+except ImportError:
+    from yaml import Loader
 import pprint
 
 import consul
@@ -113,7 +117,7 @@ class BiomajFTP(object):
             config_file = os.environ['BIOMAJ_CONFIG']
         self.cfg = None
         with open(config_file, 'r') as ymlfile:
-            self.cfg = yaml.load(ymlfile)
+            self.cfg = yaml.load(ymlfile, Loader=Loader)
             Utils.service_config_override(self.cfg)
 
         # There is an issue with tcp checks, see https://github.com/cablehead/python-consul/issues/136

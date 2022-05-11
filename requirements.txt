@@ -1,6 +1,6 @@
 nose
 mock
-pymongo
+pymongo>=3.12.3,<4
 python-consul
 pyftpdlib
 requests

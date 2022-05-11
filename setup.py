@@ -21,7 +21,7 @@ config = {
     'url': 'http://biomaj.genouest.org',
     'download_url': 'http://biomaj.genouest.org',
     'author_email': 'olivier.sallou@irisa.fr',
-    'version': '3.0.7',
+    'version': '3.0.8',
      'classifiers': [
         # How mature is this project? Common values are
         #   3 - Alpha
@@ -38,13 +38,10 @@ config = {
         'License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)',
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4'
     ],
     'install_requires': ['requests',
-                         'pymongo',
+                         'pymongo>=3.12.3,<4',
                          'python-consul',
                          'pyftpdlib',
                          'biomaj_core',

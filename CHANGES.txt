@@ -1,5 +1,5 @@
 3.0.7:
-
+  update dependencies and pyyaml loader
 3.0.6:
   Add ftp/masquerade_address in config or MASQUERADE_ADDRESS env variable to define address ftp server should advertise (mainly for docker)
 3.0.5:
