@@ -46,6 +46,7 @@ config = {
                          'pyftpdlib',
                          'biomaj_core',
                          'biomaj_user',
+                         'PyYAML',
                          'python-consul'
                          ],
     'tests_require': ['nose', 'mock'],

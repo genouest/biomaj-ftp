@@ -6,3 +6,4 @@ pyftpdlib
 requests
 biomaj_core>=3.0.10
 biomaj_user
+PyYAML
